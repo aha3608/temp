@@ -1,11 +1,19 @@
-# Simple Python program to greet the user
+from configparser import ConfigParser
 
-def greet():
-    # Ask for the user's name
-    name = input("What's your name? ")
-    
-    # Greet the user
-    print(f"Hello, {name}! Welcome to Python programming.")
+# Load the INI file
+config = ConfigParser()
+config.read('info.ini')
 
-# Call the greet function
-greet()
+# Function to get values based on environment
+def get_config(environment, key):
+    if environment in config:
+        return config[environment].get(key, None)
+    else:
+        raise ValueError(f"Environment '{environment}' not found in the config file.")
+
+# Example usage
+dev_value = get_config('dev', 'variable_name')  # Replace 'variable_name' with your key
+prd_value = get_config('prd', 'variable_name')
+
+print(f"Dev Value: {dev_value}")
+print(f"Prod Value: {prd_value}")
