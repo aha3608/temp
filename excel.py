@@ -1,19 +1,42 @@
-from configparser import ConfigParser
+import yaml
+import openpyxl
+import os
 
-# Load the INI file
-config = ConfigParser()
-config.read('info.ini')
+def parse_config_and_extract_data(config_path):
+    # Load the YAML configuration file
+    with open(config_path, 'r') as config_file:
+        config = yaml.safe_load(config_file)
 
-# Function to get values based on environment
-def get_config(environment, key):
-    if environment in config:
-        return config[environment].get(key, None)
-    else:
-        raise ValueError(f"Environment '{environment}' not found in the config file.")
+    extracted_data = {}
+
+    # Iterate through files and tabs in the config
+    for file_name, tabs in config.get('files', {}).items():
+        file_path = os.path.join(config.get('location', ''), f"{file_name}.xlsx")
+        extracted_data[file_name] = {}
+
+        # Load the Excel workbook
+        workbook = openpyxl.load_workbook(file_path)
+
+        for tab_name, cells in tabs.items():
+            worksheet = workbook[tab_name]
+            extracted_data[file_name][tab_name] = []
+
+            # Extract data from specified cell locations
+            for cell_info in cells:
+                cell_location = cell_info.get('cell')
+                label = worksheet[cell_location].value  # Read value directly from the cell
+                extracted_data[file_name][tab_name].append({
+                    'cell': cell_location,
+                    'label': label
+                })
+
+    return extracted_data
+
 
 # Example usage
-dev_value = get_config('dev', 'variable_name')  # Replace 'variable_name' with your key
-prd_value = get_config('prd', 'variable_name')
+if __name__ == "__main__":
+    # Path to the config.yml file
+    config_path = "config.yml"
 
-print(f"Dev Value: {dev_value}")
-print(f"Prod Value: {prd_value}")
+    # Extract data from Excel files based on the config
+    data
