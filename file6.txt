@@ -1,1 +1,90 @@
+import imaplib
+import email
+import os
+
+# Function to load data into the database
+def load_to_db():
+    print("Data loaded to the database!")
+
+# Function to download attachments
+def download_attachment(msg, download_folder="attachments"):
+    if not os.path.exists(download_folder):
+        os.makedirs(download_folder)
+
+    for part in msg.walk():
+        if part.get_content_maintype() == 'multipart':
+            continue
+        if part.get('Content-Disposition') is None:
+            continue
+
+        filename = part.get_filename()
+        if filename:
+            filepath = os.path.join(download_folder, filename)
+            with open(filepath, 'wb') as f:
+                f.write(part.get_payload(decode=True))
+            print(f"Attachment downloaded: {filepath}")
+            return filepath  # Return the path of the downloaded file
+
+    return None  # No attachment found
+
+# Function to check emails and process them
+def check_email_and_process():
+    # Email account credentials
+    EMAIL = "your_email@example.com"
+    PASSWORD = "your_password"
+    IMAP_SERVER = "imap.example.com"
+
+    try:
+        # Connect to the email server and log in
+        mail = imaplib.IMAP4_SSL(IMAP_SERVER)
+        mail.login(EMAIL, PASSWORD)
+        
+        # Select the mailbox you want to check (e.g., "INBOX")
+        mail.select("inbox")
+
+        # Search for all emails in the inbox
+        status, messages = mail.search(None, "ALL")
+        email_ids = messages[0].split()
+
+        for email_id in email_ids:
+            # Fetch the email by ID
+            status, data = mail.fetch(email_id, "(RFC822)")
+            raw_email = data[0][1]
+            
+            # Parse the email content
+            msg = email.message_from_bytes(raw_email)
+            
+            # Get the email body
+            if msg.is_multipart():
+                for part in msg.walk():
+                    if part.get_content_type() == "text/plain":
+                        body = part.get_payload(decode=True).decode()
+                        break
+            else:
+                body = msg.get_payload(decode=True).decode()
+
+            # Check the first line of the email body
+            first_line = body.splitlines()[0].strip().lower()
+            
+            if "approved" in first_line:
+                print("Email approved. Loading data to database...")
+                load_to_db()
+            
+            elif "edited" in first_line:
+                print("Email edited. Checking for attachments...")
+                attachment_path = download_attachment(msg)
+                if attachment_path:
+                    print("Attachment processed. Loading data to database...")
+                    load_to_db()
+                else:
+                    print("No attachment found in 'edited' email.")
+        
+        # Logout from the email server
+        mail.logout()
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+# Call the function to check emails and process them
+check_email_and_process()
 
