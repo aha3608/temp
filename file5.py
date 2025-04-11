@@ -1,39 +1,45 @@
-import os
+import csv
+import cx_Oracle
 
-def append_string_to_files(directory, input_string):
+def execute_sql_with_csv(oracle_connection, csv_file_path, sql_query):
     """
-    Appends the input string to all files in the given directory.
+    Executes an SQL query using values from a CSV file against an Oracle database.
 
-    Args:
-        directory (str): Path to the directory containing the files.
-        input_string (str): The string to append to each file.
-
-    Returns:
-        None
+    Parameters:
+        oracle_connection (str): Oracle connection string (e.g., "user/password@hostIP/database").
+        csv_file_path (str): Path to the CSV file.
+        sql_query (str): SQL query with placeholders for values (e.g., "INSERT INTO TABLE (COLUMN1, COLUMN2) VALUES (:1, :2)").
     """
-    # Check if the directory exists
-    if not os.path.exists(directory):
-        print(f"Error: Directory '{directory}' does not exist.")
-        return
+    try:
+        # Connect to the Oracle database
+        connection = cx_Oracle.connect(oracle_connection)
+        cursor = connection.cursor()
+        print("Connection established.")
 
-    # Iterate through all files in the directory
-    for file_name in os.listdir(directory):
-        file_path = os.path.join(directory, file_name)
+        # Open the CSV file and read its contents
+        with open(csv_file_path, mode="r") as csv_file:
+            reader = csv.reader(csv_file)
+            headers = next(reader)  # Skip header row if present
+            
+            # Execute SQL for each row in the CSV file
+            for row in reader:
+                cursor.execute(sql_query, row)
 
-        # Check if it's a file (not a subdirectory)
-        if os.path.isfile(file_path):
-            try:
-                # Open the file in append mode and add the input string
-                with open(file_path, 'a') as file:
-                    file.write(input_string)
-                print(f"Appended string to: {file_name}")
-            except Exception as e:
-                print(f"Error appending to {file_name}: {e}")
+        # Commit the transaction and close the connection
+        connection.commit()
+        print("SQL execution completed successfully.")
+        
+    except Exception as error:
+        print(f"Error occurred: {error}")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
-if __name__ == "__main__":
-    # Example usage
-    directory_path = "path/to/your/directory"
-    string_to_append = "\nThis is the appended string."
+# Example usage
+oracle_connection = "user/password@hostIP/database"
+csv_file_path = "data.csv"
+sql_query = "INSERT INTO TABLE_NAME (COLUMN1, COLUMN2, COLUMN3) VALUES (:1, :2, :3)"
 
-    append_string_to_files(directory_path, string_to_append)
-
+execute_sql_with_csv(oracle_connection, csv_file_path, sql_query)
