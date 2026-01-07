@@ -1,43 +1,40 @@
-import yaml
-import pandas as pd
-import os
+import time
+import random
+import pyautogui
+from pypdf import PdfReader
 
-def parse_config_and_extract_data(config_path):
-    # Load the YAML configuration file
-    with open(config_path, 'r') as config_file:
-        config = yaml.safe_load(config_file)
+def simulate_human_reading(pdf_path, sec_per_page=28):
+    print("Open the PDF in Adobe Acrobat Reader, focus the window, enable continuous scrolling.")
+    input("Press Enter when ready... ")
+    time.sleep(1)
 
-    extracted_data = {}
+    try:
+        pages = len(PdfReader(pdf_path).pages)
+        total_time = pages * sec_per_page
+        print(f"{pages} pages → ~{total_time//60} min simulation")
+    except:
+        total_time = 600
+        print("Page count failed → 10 min default")
 
-    # Iterate through files and tabs in the config
-    for file_name, tabs in config.get('files', {}).items():
-        file_path = os.path.join(config.get('location', ''), f"{file_name}.xlsx")
-        extracted_data[file_name] = {}
+    print("Starting simulation (Ctrl+C to stop)")
+    start = time.time()
+    try:
+        while time.time() - start < total_time:
+            pyautogui.scroll(-random.randint(40, 140))
+            time.sleep(random.uniform(0.6, 2.3))
 
-        # Open the Excel file and process each tab
-        for tab_name, cells in tabs.items():
-            df = pd.read_excel(file_path, sheet_name=tab_name)
-            extracted_data[file_name][tab_name] = []
+            if random.random() < 0.14:
+                time.sleep(random.uniform(4.5, 14))
 
-            # Extract data points based on 'cell' and 'label'
-            for cell_info in cells:
-                cell_value = df.loc[df['cell'] == cell_info.get('cell'), 'label'].values
-                if cell_value.size > 0:
-                    extracted_data[file_name][tab_name].append({
-                        'cell': cell_info.get('cell'),
-                        'label': cell_value[0]
-                    })
+            if random.random() < 0.11:
+                back = random.randint(180, 420)
+                pyautogui.scroll(back)
+                time.sleep(random.uniform(3.5, 9.5))
+                pyautogui.scroll(-back)
+    except KeyboardInterrupt:
+        pass
+    print("Done")
 
-    return extracted_data
-
-
-# Example usage
 if __name__ == "__main__":
-    # Path to the config.yml file
-    config_path = "config.yml"
-
-    # Extract data from the Excel files based on the config
-    data = parse_config_and_extract_data(config_path)
-
-    # Print the extracted data
-    print(data)
+    PDF_FILE = r"C:\Path\To\Your\File.pdf"
+    simulate_human_reading(PDF_FILE)
