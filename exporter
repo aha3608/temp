@@ -4,65 +4,68 @@ import java.util.Random;
 
 public class PdfSim {
 
-    public static void main(String[] a) {
-        int totSec  = 600;
-        int secPg   = 28;
-        double pLong = 0.14;
-        double pBack = 0.11;
+    public static void main(String[] args) {
+        // ────────────────────────────────────────────────
+        // Configuration - change these values as needed
+        // ────────────────────────────────────────────────
+        int totalSeconds            = 600;     // total simulation time in seconds (10 minutes)
+        double probabilityLongPause = 0.14;
+        double probabilityBackScroll= 0.11;
+        // ────────────────────────────────────────────────
 
-        System.out.printf("Starting simulation for %d s (~%d min)%n",
-                totSec, totSec / 60);
+        System.out.printf("Starting human-like scrolling simulation for %d seconds (~%d min)%n",
+                totalSeconds, totalSeconds / 60);
 
-        System.out.println("Open PDF and focus window.");
-        System.out.println("Starting in 8 s...");
-        slp(8000);
+        // Give you time to open the PDF and focus the viewer window
+        System.out.println("Please open your PDF file now and make sure the document window is active.");
+        System.out.println("Program will start in 8 seconds...");
+        sleep(8000);
 
-        Robot rbt;
+        Robot robot;
         try {
-            rbt = new Robot();
+            robot = new Robot();
         } catch (AWTException e) {
-            System.err.println("Robot init failed: " + e.getMessage());
+            System.err.println("Failed to initialize java.awt.Robot: " + e.getMessage());
             return;
         }
 
-        Random rnd = new Random();
-        long st = System.currentTimeMillis();
-        long en = st + (totSec * 1000L);
+        Random rand = new Random();
+        long start = System.currentTimeMillis();
+        long end   = start + (totalSeconds * 1000L);
 
-        try {
-            while (System.currentTimeMillis() < en) {
-                int fwd = rnd.nextInt(201) + 80;
-                rbt.mouseWheel(fwd);
+        while (System.currentTimeMillis() < end) {
+            // Normal forward scroll (down the page)
+            int scrollDown = rand.nextInt(201) + 80;           // 80–280
+            robot.mouseWheel(scrollDown);
 
-                double sp = 0.6 + rnd.nextDouble() * 1.7;
-                slp((long)(sp * 1000));
+            // Short random pause after each scroll
+            double shortPauseSec = 0.6 + rand.nextDouble() * 1.7;  // 0.6 – 2.3 s
+            sleep((long)(shortPauseSec * 1000));
 
-                if (rnd.nextDouble() < pLong) {
-                    double lp = 4.5 + rnd.nextDouble() * 9.5;
-                    slp((long)(lp * 1000));
-                }
-
-                if (rnd.nextDouble() < pBack) {
-                    int bk = rnd.nextInt(241) + 180;
-                    rbt.mouseWheel(-bk);
-
-                    double rp = 3.5 + rnd.nextDouble() * 6.0;
-                    slp((long)(rp * 1000));
-
-                    rbt.mouseWheel(bk);
-                }
+            // Occasional long "thinking/reading" pause
+            if (rand.nextDouble() < probabilityLongPause) {
+                double longPauseSec = 4.5 + rand.nextDouble() * 9.5;  // 4.5 – 14.0 s
+                sleep((long)(longPauseSec * 1000));
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            System.out.println("Interrupted.");
+
+            // Occasional "go back to re-read" behavior
+            if (rand.nextDouble() < probabilityBackScroll) {
+                int backAmount = rand.nextInt(241) + 180;     // 180–420
+                robot.mouseWheel(-backAmount);                 // scroll up
+
+                double reviewPauseSec = 3.5 + rand.nextDouble() * 6.0;  // 3.5 – 9.5 s
+                sleep((long)(reviewPauseSec * 1000));
+
+                robot.mouseWheel(backAmount);                  // scroll down again
+            }
         }
 
-        System.out.println("Done.");
+        System.out.println("Simulation completed.");
     }
 
-    private static void slp(long ms) {
+    private static void sleep(long millis) {
         try {
-            Thread.sleep(ms);
+            Thread.sleep(millis);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
