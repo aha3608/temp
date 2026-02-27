@@ -1,0 +1,70 @@
+import java.awt.AWTException;
+import java.awt.Robot;
+import java.util.Random;
+
+public class PdfSim {
+
+    public static void main(String[] a) {
+        int totSec  = 600;
+        int secPg   = 28;
+        double pLong = 0.14;
+        double pBack = 0.11;
+
+        System.out.printf("Starting simulation for %d s (~%d min)%n",
+                totSec, totSec / 60);
+
+        System.out.println("Open PDF and focus window.");
+        System.out.println("Starting in 8 s...");
+        slp(8000);
+
+        Robot rbt;
+        try {
+            rbt = new Robot();
+        } catch (AWTException e) {
+            System.err.println("Robot init failed: " + e.getMessage());
+            return;
+        }
+
+        Random rnd = new Random();
+        long st = System.currentTimeMillis();
+        long en = st + (totSec * 1000L);
+
+        try {
+            while (System.currentTimeMillis() < en) {
+                int fwd = rnd.nextInt(201) + 80;
+                rbt.mouseWheel(fwd);
+
+                double sp = 0.6 + rnd.nextDouble() * 1.7;
+                slp((long)(sp * 1000));
+
+                if (rnd.nextDouble() < pLong) {
+                    double lp = 4.5 + rnd.nextDouble() * 9.5;
+                    slp((long)(lp * 1000));
+                }
+
+                if (rnd.nextDouble() < pBack) {
+                    int bk = rnd.nextInt(241) + 180;
+                    rbt.mouseWheel(-bk);
+
+                    double rp = 3.5 + rnd.nextDouble() * 6.0;
+                    slp((long)(rp * 1000));
+
+                    rbt.mouseWheel(bk);
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.out.println("Interrupted.");
+        }
+
+        System.out.println("Done.");
+    }
+
+    private static void slp(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}
